@@ -30,7 +30,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
         {
             var operation = new OpenApiOperation();
             var methodInfo = typeof(FakeConstructedControllerWithXmlComments)
-                .GetMethod(nameof(FakeConstructedControllerWithXmlComments.ActionWithSummaryAndResponseTags));
+                .GetMethod(nameof(FakeConstructedControllerWithXmlComments.ActionWithSummaryAndRemarksTags));
             var apiDescription = ApiDescriptionFactory.Create(methodInfo: methodInfo, groupName: "v1", httpMethod: "POST", relativePath: "resource");
             var filterContext = new OperationFilterContext(apiDescription, null, null, methodInfo);
 
@@ -71,6 +71,51 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
             Assert.Equal("Description for 200 response", operation.Responses["200"].Description);
             Assert.Equal("Description for 400 response", operation.Responses["400"].Description);
             Assert.Equal("Description for default response", operation.Responses["default"].Description);
+        }
+
+        [Fact]
+        public void Apply_SetsSingleContentType_FromActionResponseTagAttribute()
+        {
+            var operation = new OpenApiOperation();
+            var methodInfo = typeof(FakeConstructedControllerWithXmlComments)
+                .GetMethod(nameof(FakeConstructedControllerWithXmlComments.ActionWithResponseAndSingleContentTypeAttribute));
+            var apiDescription = ApiDescriptionFactory.Create(methodInfo: methodInfo, groupName: "v1", httpMethod: "POST", relativePath: "resource");
+            var filterContext = new OperationFilterContext(apiDescription, null, null, methodInfo);
+
+            Subject().Apply(operation, filterContext);
+
+            Assert.Equal("application/problem+json", operation.Responses["400"].Content.Keys.First());
+        }
+
+        [Fact]
+        public void Apply_SetsMultipleContentTypes_FromActionResponseTagContentTypeNode()
+        {
+            var operation = new OpenApiOperation();
+            var methodInfo = typeof(FakeConstructedControllerWithXmlComments)
+                .GetMethod(nameof(FakeConstructedControllerWithXmlComments.ActionWithResponseAndMultipleContentTypeNodes));
+            var apiDescription = ApiDescriptionFactory.Create(methodInfo: methodInfo, groupName: "v1", httpMethod: "POST", relativePath: "resource");
+            var filterContext = new OperationFilterContext(apiDescription, null, null, methodInfo);
+
+            Subject().Apply(operation, filterContext);
+
+            Assert.Contains("application/problem+json", operation.Responses["400"].Content.Keys);
+            Assert.Contains("application/problem+xml", operation.Responses["400"].Content.Keys);
+            Assert.Contains("text/plain", operation.Responses["400"].Content.Keys);
+        }
+
+        [Fact]
+        public void Apply_SetsMultipleContentTypes_FromActionResponseTagExampleNode()
+        {
+            var operation = new OpenApiOperation();
+            var methodInfo = typeof(FakeConstructedControllerWithXmlComments)
+                .GetMethod(nameof(FakeConstructedControllerWithXmlComments.ActionWithResponseAndMultipleContentTypeAttributesInExampleNodes));
+            var apiDescription = ApiDescriptionFactory.Create(methodInfo: methodInfo, groupName: "v1", httpMethod: "POST", relativePath: "resource");
+            var filterContext = new OperationFilterContext(apiDescription, null, null, methodInfo);
+
+            Subject().Apply(operation, filterContext);
+
+            Assert.Contains("application/problem+json", operation.Responses["400"].Content.Keys);
+            Assert.Contains("application/problem+xml", operation.Responses["400"].Content.Keys);
         }
 
         private XmlCommentsOperationFilter Subject()
